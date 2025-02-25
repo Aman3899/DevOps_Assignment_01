@@ -1,35 +1,38 @@
-name: Docker-Compose file for Assignment No. 1 of DevOps
+version: '3.8'
 
 services:
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    ports:
-      - "5173:5173"
-    volumes:
-      - ./frontend:/usr/share/nginx/html
-    restart: always
-
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile
     ports:
       - "3000:3000"
     volumes:
       - ./backend:/app
+      - /app/node_modules
     environment:
       - NODE_ENV=development
-    restart: always
+    command: sh -c "npm install && nodemon server.js"
+    depends_on:
+      - mongo
 
-  database:
-    image: mongo:latest
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    command: sh -c "npm install && npm start"
+
+  mongo:
+    image: mongo:6.0
     ports:
       - "27017:27017"
     volumes:
-      - mongo_data:/data/db
-    restart: always
+      - mongo-data:/data/db
 
 volumes:
-  mongo_data:
+  mongo-data:
