@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "start": "npm start",
-    "dev": "nodemon app.js"
+    "dev": "nodemon app.js",
+    "test": "echo 'No tests defined' && exit 0"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
