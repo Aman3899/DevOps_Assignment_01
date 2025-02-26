@@ -28,32 +28,31 @@ Ensure the following are installed:
 
 ---
 
-## **Task 1: Linux System Administration**
+## **Task 1: Linux System Administration (Done by Ismail Daniyal)**
 
 ### **Step 1: Creating a systemd Service**
 ```bash
-sudo nano /etc/systemd/system/webapp.service
+sudo nano /etc/systemd/system/express.service
 ```
 Add the following content:
 ```ini
 [Unit]
-Description=Simple Web Server
+Description=Express.js Web Server
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/node /home/user/server.js
+ExecStart=/usr/bin/node /home/ismaildanial/Desktop/DevOps_Assignment_01/backend/app.js
 Restart=always
-User=nobody
-Group=nogroup
+User=amanullah
+Environment=NODE_ENV=production
+WorkingDirectory=/home/ismaildanial/Desktop/DevOps_Assignment_01/backend
 
 [Install]
 WantedBy=multi-user.target
-```
-Enable and start the service:
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable webapp
-sudo systemctl start webapp
+sudo systemctl enable express
+sudo systemctl start express
 ```
 
 ### **Step 2: Kernel Tuning**

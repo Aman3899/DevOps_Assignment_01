@@ -9,4 +9,3 @@ if ! systemctl is-active --quiet $SERVICE_NAME; then
 else
     echo "$(date): $SERVICE_NAME is running." >> $LOG_FILE
 fi
-
