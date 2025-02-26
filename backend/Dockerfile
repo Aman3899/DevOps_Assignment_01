@@ -28,4 +28,4 @@ COPY --from=builder /app /app
 EXPOSE 3000
 
 # Start the backend using nodemon
-CMD ["nodemon", "app.js"]
+CMD ["npx", "nodemon"]
