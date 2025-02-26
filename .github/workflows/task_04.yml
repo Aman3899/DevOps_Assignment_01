@@ -73,12 +73,12 @@ jobs:
 
       - name: Build and Push Backend Image
         run: |
-          docker build -t devops_a01/backend:latest ./backend
-          docker tag devops_a01/backend:latest devops_a01/backend:$(date +%Y%m%d%H%M)
-          docker push devops_a01/backend:latest
+          docker build -t assignment_01-backend:latest ./backend
+          docker tag ${{ secrets.DOCKERHUB_PASSWORD }}/backend:latest ${{ secrets.DOCKERHUB_PASSWORD }}/backend:$(date +%Y%m%d%H%M)
+          docker push ${{ secrets.DOCKERHUB_PASSWORD }}/backend:latest
 
       - name: Build and Push Frontend Image
         run: |
-          docker build -t devops_a01/frontend:latest ./frontend
-          docker tag devops_a01/frontend:latest devops_a01/frontend:$(date +%Y%m%d%H%M)
-          docker push devops_a01/frontend:latest
+          docker build -t assignment_01-frontend:latest ./frontend
+          docker tag assignment_01-frontend:latest ${{ secrets.DOCKERHUB_PASSWORD }}/frontend:$(date +%Y%m%d%H%M)
+          docker push ${{ secrets.DOCKERHUB_PASSWORD }}/frontend:latest
