@@ -1,21 +1,21 @@
-FROM node:18-alpine AS build
+# Stage 1: Build the React/Vite app
+FROM node:alpine AS builder
 
 WORKDIR /app
 
-COPY package*.json ./
+COPY package.json package-lock.json ./
 
-RUN npm install
+RUN npm ci
 
 COPY . .
 
 RUN npm run build
 
-FROM nginx:alpine
+# Stage 2: Serve with NGINX
+FROM nginx:alpine AS production
 
-WORKDIR /usr/share/nginx/html
+COPY --from=builder /app/dist /usr/share/nginx/html
 
-COPY --from=build /app/build .
-
-EXPOSE 5173
+EXPOSE 3000
 
 CMD ["nginx", "-g", "daemon off;"]
