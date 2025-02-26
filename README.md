@@ -70,7 +70,7 @@ sudo ufw enable
 
 ---
 
-## **Task 2: Bash Scripting**
+## **Task 2: Bash Scripting (Done by Sami)**
 
 ### **Health Check Script**
 ```bash
@@ -99,7 +99,7 @@ bash log_analysis.sh
 
 ---
 
-## **Task 3: Docker & Docker Compose**
+## **Task 3: Docker & Docker Compose (Done by Ismail,AmanUllah, & Sami)**
 
 ### **Step 1: Dockerfile for Backend (Express.js)**
 ```dockerfile
@@ -134,39 +134,93 @@ docker-compose up -d
 
 ---
 
-## **Task 4: Continuous Integration (CI)**
+## **Task 4: Continuous Integration (CI) (Done by Amanullah)**
 
 ### **GitHub Actions Workflow**
 Create `.github/workflows/ci.yml`:
 ```yaml
 name: CI Pipeline
-on: [push, pull_request]
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
 jobs:
-  build:
+  build-frontend:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v2
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: 18
 
       - name: Install Dependencies
-        run: npm install
-
-      - name: Run Tests
-        run: npm test
-
-      - name: Build Docker Image
-        run: docker build -t myapp/backend:latest .
-
-      - name: Push to DockerHub
         run: |
-          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-          docker tag myapp/backend:latest mydockerhub/myapp:latest
-          docker push mydockerhub/myapp:latest
+          cd frontend
+          npm install
+
+      - name: Run Linter
+        run: |
+          cd frontend
+          npm run lint
+
+      - name: Build Frontend
+        run: |
+          cd frontend
+          npm run build
+
+  build-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install Dependencies
+        run: |
+          cd backend
+          npm install
+
+      - name: Run Backend Tests
+        run: |
+          cd backend
+          npm test
+
+      - name: Lint Backend Code
+        run: |
+          cd backend
+          npm run lint
+
+  docker-build-push:
+    needs: [build-frontend, build-backend]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Login to DockerHub
+        run: echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+      - name: Build and Push Backend Image
+        run: |
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/backend:latest ./backend
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/backend:latest
+
+      - name: Build and Push Frontend Image
+        run: |
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/frontend:latest ./frontend
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/frontend:latest
 ```
 
 ---
