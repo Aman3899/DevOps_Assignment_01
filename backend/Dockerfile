@@ -1,20 +1,18 @@
-# Use an official lightweight Node.js image as the base
 FROM node:18-alpine AS builder
 
 # Set the working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json separately for better caching
-COPY package*.json ./
+# Copy package files first (to leverage Docker cache)
+COPY package.json package-lock.json ./
 
-# Install dependencies
-RUN npm install --omit=dev
+# Install only production dependencies
+RUN npm ci --omit=dev
 
-# Copy only necessary files
+# Copy the rest of the application files
 COPY . .
 
-# Use a minimal runtime image for security & size optimization
-FROM node:18-alpine
+FROM node:18-alpine AS production
 
 # Set a non-root user for security
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
@@ -23,11 +21,14 @@ USER appuser
 # Set the working directory
 WORKDIR /app
 
-# Copy only required files from the builder stage
-COPY --from=builder /app .
+# Copy built files from the builder stage
+COPY --from=builder /app /app
+
+# Install nodemon globally
+RUN npm install -g nodemon
 
 # Expose the necessary port
 EXPOSE 3000
 
-# Start the server
-CMD ["npm", "start"]
+# Start the backend using nodemon
+CMD ["nodemon", "app.js"]

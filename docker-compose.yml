@@ -1,5 +1,9 @@
 version: '3.8'
 
+networks:
+  my_own_network:
+    driver: bridge
+
 services:
   backend:
     build:
@@ -11,9 +15,10 @@ services:
       - /app/node_modules
     environment:
       - NODE_ENV=development
-    command: sh -c "npm install && nodemon server.js"
     depends_on:
-      - mongo
+      - db
+    networks:
+      - my_own_network
 
   frontend:
     build:
@@ -25,14 +30,19 @@ services:
       - /app/node_modules
     environment:
       - NODE_ENV=development
-    command: sh -c "npm install && npm start"
+    depends_on:
+      - backend
+    networks:
+      - my_own_network
 
-  mongo:
-    image: mongo:6.0
+  db:
+    image: mongo
     ports:
       - "27017:27017"
     volumes:
       - mongo-data:/data/db
+    networks:
+      - my_own_network
 
 volumes:
   mongo-data:
