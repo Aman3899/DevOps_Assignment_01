@@ -25,7 +25,7 @@ WORKDIR /app
 COPY --from=builder /app /app
 
 # Install nodemon globally
-RUN npm install -g nodemon
+RUN npm install --save-dev nodemon
 
 # Expose the necessary port
 EXPOSE 3000
