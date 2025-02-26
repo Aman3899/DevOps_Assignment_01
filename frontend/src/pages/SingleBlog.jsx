@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Navbar from '../components/Navbar';
 import { api_base_url } from '../helper';
@@ -34,7 +34,7 @@ const SingleBlog = () => {
         setError(result.msg);
       }
     } catch (err) {
-      setError("Failed to fetch blog");
+      setError("Failed to fetch blog: ", err);
     } finally {
       setLoading(false);
     }

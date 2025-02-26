@@ -25,7 +25,7 @@ const Blog = ({ data }) => {
       whileHover={{ scale: 1.02 }}
       transition={{ duration: 0.3 }}
       onClick={() => navigate(`/blog/${data._id}`)}
-      className="blog bg-gray-800 rounded-xl overflow-hidden cursor-pointer shadow-lg hover:shadow-2xl transition-all duration-300"
+      className="bg-gray-800 rounded-xl overflow-hidden cursor-pointer shadow-lg hover:shadow-2xl transition-all duration-300"
     >
       <div className="relative h-48 overflow-hidden">
         <img 

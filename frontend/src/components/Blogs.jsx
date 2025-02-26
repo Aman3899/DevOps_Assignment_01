@@ -1,5 +1,4 @@
-// Blogs.jsx
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import Blog from './Blog';
 import { api_base_url } from '../helper';
@@ -21,15 +20,15 @@ const Blogs = () => {
           token: localStorage.getItem("token")
         })
       });
-      const data = await response.json();
-      
-      if (data.success) {
-        setData(data.blogs);
+      const responseData = await response.json();
+
+      if (responseData.success) {
+        setData(responseData.blogs);
       } else {
-        setError(data.msg);
+        setError(responseData.msg);
       }
     } catch (err) {
-      setError("Failed to fetch blogs");
+      setError("Failed to fetch blogs: ", err);
     } finally {
       setLoading(false);
     }
@@ -89,7 +88,7 @@ const Blogs = () => {
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
         >
           {data.map((item, index) => (
-            <Blog key={item.id || index} data={item} index={index} />
+            <Blog key={item._id || index} data={item} index={index} />
           ))}
         </motion.div>
       ) : (

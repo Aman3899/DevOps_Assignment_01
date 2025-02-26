@@ -1,5 +1,4 @@
 // Contact.jsx
-import React, { useState } from 'react';
 import Navbar from '../components/Navbar';
 
 const Contact = () => {
@@ -24,7 +23,7 @@ const Contact = () => {
 
                     <div className="mb-8">
                         <p className="text-gray-300 mb-4">
-                            We'd love to hear from you. Send us a message and we'll respond as soon as possible.
+                            We&apos;d love to hear from you. Send us a message and we&apos;ll respond as soon as possible.
                         </p>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
