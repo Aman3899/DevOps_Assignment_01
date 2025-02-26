@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
@@ -99,6 +100,24 @@ const Blog = ({ data }) => {
       </div>
     </motion.div>
   );
+};
+
+Blog.propTypes = {
+  data: PropTypes.shape({
+    _id: PropTypes.string.isRequired,
+    image: PropTypes.string,
+    title: PropTypes.string.isRequired,
+    category: PropTypes.string,
+    createdAt: PropTypes.string,
+    readTime: PropTypes.number,
+    desc: PropTypes.string,
+    author: PropTypes.shape({
+      name: PropTypes.string,
+      avatar: PropTypes.string,
+    }),
+    likes: PropTypes.number,
+    comments: PropTypes.number,
+  }).isRequired,
 };
 
 export default Blog;
