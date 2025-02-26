@@ -1,20 +1,44 @@
-# name: CI Pipeline - Task#04
+# name: CI Pipeline
 
 # on:
-#     push:
-#         branches:
-#         - main
-
-#     pull_request:
-#         branches:
-#         - main
-
+#   push:
+#     branches:
+#       - main
+#   pull_request:
+#     branches:
+#       - main
 
 # jobs:
-#     build:
+#   build-frontend:
 #     runs-on: ubuntu-latest
 #     steps:
-#       - name: Checkout Repository
+#       - name: Checkout Code
+#         uses: actions/checkout@v3
+
+#       - name: Set up Node.js
+#         uses: actions/setup-node@v3
+#         with:
+#           node-version: 18
+
+#       - name: Install Dependencies
+#         run: |
+#           cd frontend
+#           npm install
+
+#       - name: Run Linter
+#         run: |
+#           cd frontend
+#           npm run lint
+
+#       - name: Build Frontend
+#         run: |
+#           cd frontend
+#           npm run build
+
+#   build-backend:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout Code
 #         uses: actions/checkout@v3
 
 #       - name: Set up Node.js
@@ -27,38 +51,34 @@
 #           cd backend
 #           npm install
 
-#       - name: Run Linter
+#       - name: Run Backend Tests
 #         run: |
-#             cd backend
-#             npm install eslint --save-dev
-#             npx eslint .
+#           cd backend
+#           npm test
 
-#       - name: Run Tests
+#       - name: Lint Backend Code
 #         run: |
-#             cd backend
-#             npm test
+#           cd backend
+#           npm run lint
 
-#     docker-build:
-#        needs: build
-#        runs-on: ubuntu-latest
-
+#   docker-build-push:
+#     needs: [build-frontend, build-backend]
+#     runs-on: ubuntu-latest
 #     steps:
-#       - name: Checkout Repository
+#       - name: Checkout Code
 #         uses: actions/checkout@v3
 
-#       - name: Build Docker Image
-#         run: |
-#           docker build -t myapp-backend ./backend
-
-#   push-to-dockerhub:
-#     needs: docker-build
-#     runs-on: ubuntu-latest
-
-#     steps:
 #       - name: Login to DockerHub
 #         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-#       - name: Push Image
+#       - name: Build and Push Backend Image
 #         run: |
-#           docker tag myapp-backend mydockerhubuser/myapp-backend:latest
-#           docker push mydockerhubuser/myapp-backend:latest
+#           docker build -t myrepo/backend:latest ./backend
+#           docker tag myrepo/backend:latest myrepo/backend:$(date +%Y%m%d%H%M)
+#           docker push myrepo/backend:latest
+
+#       - name: Build and Push Frontend Image
+#         run: |
+#           docker build -t myrepo/frontend:latest ./frontend
+#           docker tag myrepo/frontend:latest myrepo/frontend:$(date +%Y%m%d%H%M)
+#           docker push myrepo/frontend:latest

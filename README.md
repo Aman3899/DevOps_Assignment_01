@@ -43,7 +43,7 @@ After=network.target
 [Service]
 ExecStart=/usr/bin/node /home/ismaildanial/Desktop/DevOps_Assignment_01/backend/app.js
 Restart=always
-User=amanullah
+User=ismaildanial
 Environment=NODE_ENV=production
 WorkingDirectory=/home/ismaildanial/Desktop/DevOps_Assignment_01/backend
 
