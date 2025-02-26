@@ -1,8 +1,7 @@
-import React from 'react'
 
 const NoPage = () => {
   return (
-    <div>NoPage 404</div>
+    <div>No Page 404</div>
   )
 }
 

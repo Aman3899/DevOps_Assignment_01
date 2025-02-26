@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import logo from "../images/logo.png"
 import { Link, useNavigate } from 'react-router-dom';
 import { api_base_url } from '../helper';

@@ -1,5 +1,4 @@
 // About.jsx
-import React from 'react';
 import Navbar from '../components/Navbar';
 
 const About = () => {
@@ -14,7 +13,7 @@ const About = () => {
                         <section className="mb-8">
                             <h2 className="text-2xl font-semibold text-white mb-4">Our Story</h2>
                             <p className="text-gray-300 leading-relaxed">
-                                Founded in 2020, we've been at the forefront of digital innovation,
+                                Founded in 2020, we&apos;ve been at the forefront of digital innovation,
                                 creating solutions that transform how businesses operate in the digital age.
                                 Our team of dedicated professionals brings together decades of combined experience.
                             </p>

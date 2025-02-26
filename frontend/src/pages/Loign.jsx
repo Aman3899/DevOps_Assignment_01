@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import logo from "../images/logo.png"
 import { Link, useNavigate } from 'react-router-dom';
 import { api_base_url } from '../helper';
@@ -8,8 +8,6 @@ const Login = () => {
   const [pwd, setPwd] = useState("");
 
   const [error, setError] = useState("");
-
-  const navigate = useNavigate();
 
   const submitForm = (e) => {
     e.preventDefault();
@@ -54,7 +52,7 @@ const Login = () => {
               <input onChange={(e) => { setPwd(e.target.value) }} value={pwd} type="password" placeholder='Password' required />
             </div>
 
-            <p className='text-[14px] text-[gray] mt-3'>Don't have an account <Link to="/signUp" className='text-purple-600'>Sign Up</Link></p>
+            <p className='text-[14px] text-[gray] mt-3'>Don&apos;t have an account <Link to="/signUp" className='text-purple-600'>Sign Up</Link></p>
 
             <p className='text-[14px] text-red-500 mt-1 mb-3'>{error}</p>
             <button className="btnNormal w-full">Login</button>

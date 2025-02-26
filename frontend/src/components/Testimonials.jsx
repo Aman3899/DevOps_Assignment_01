@@ -1,4 +1,3 @@
-import React from "react";
 import { motion } from "framer-motion";
 
 const testimonials = [
@@ -42,7 +41,7 @@ const Testimonials = () => {
                                 <img src={testimonial.image} alt={testimonial.author} className="w-full h-full object-cover"/>
                             </div>
                             <p className="text-gray-300 mt-12 mb-6 text-lg italic">
-                                "{testimonial.quote}"
+                                {testimonial.quote}
                             </p>
                             <div>
                                 <p className="text-white font-semibold text-xl">{testimonial.author}</p>
