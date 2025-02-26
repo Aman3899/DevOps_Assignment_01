@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "start": "node ./bin/www",
-    "dev": "nodemon ./bin/www",
+    "dev": "npx nodemon",
     "test": "echo 'No tests defined' && exit 0",
     "lint": "eslint ."
   },
