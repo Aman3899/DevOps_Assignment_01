@@ -36,6 +36,7 @@ services:
       - my_own_network
 
   db:
+    container_name: my_mongo_container
     image: mongo
     ports:
       - "27017:27017"
