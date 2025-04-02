@@ -1,0 +1,18 @@
+apiVersion: linkerd.io/v1alpha2
+kind: ServiceProfile
+metadata:
+  name: frontend-service.myapp.svc.cluster.local # Matches the Service's fully qualified name
+  namespace: myapp
+spec:
+  routes:
+  - name: "GET /"
+    condition:
+      method: GET
+      pathRegex: "/"
+    isRetryable: true # Enable retries for this route
+    timeout: 500ms    # Set a timeout for this route
+  - name: "GET /health"
+    condition:
+      method: GET
+      pathRegex: "/health"
+    isRetryable: false
