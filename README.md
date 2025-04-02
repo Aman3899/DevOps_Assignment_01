@@ -192,12 +192,12 @@ Automate deployments based on Git repository state using Argo CD.
     spec:
       project: default
       source:
-        repoURL: <your-git-repo-url> # e.g., https://github.com/yourusername/your-repo.git
-        path: kubernetes/helm/charts/myapp
-        targetRevision: main # Or specific branch/tag
+        repoURL: https://github.com/aman3899/DevOps_Assignment_01
+        path: kubernetes/helm/charts/
+        targetRevision: main
         helm:
           valueFiles:
-          - values-dev.yaml # Specify which values file to use
+          - values-dev.yaml
       destination:
         server: https://kubernetes.default.svc
         namespace: myapp

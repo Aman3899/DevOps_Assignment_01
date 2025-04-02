@@ -1,0 +1,10 @@
+replicaCount: 1
+frontend:
+  image: nginx:latest
+  tag: latest
+backend:
+  image: node:18
+  tag: latest
+ingress:
+  enabled: true
+  host: myapp.local
