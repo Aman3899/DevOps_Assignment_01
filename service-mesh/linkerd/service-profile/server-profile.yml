@@ -1,0 +1,19 @@
+apiVersion: linkerd.io/v1alpha2
+kind: ServiceProfile
+metadata:
+  name: backend-service.myapp.svc.cluster.local
+  namespace: myapp
+spec:
+  routes:
+  - name: "GET /api"
+    condition:
+      method: GET
+      pathRegex: "/api.*"
+    isRetryable: true
+    timeout: 1s
+  - name: "POST /api"
+    condition:
+      method: POST
+      pathRegex: "/api.*"
+    isRetryable: true
+    timeout: 2s

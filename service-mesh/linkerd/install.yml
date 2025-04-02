@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: linkerd
+  annotations:
+    linkerd.io/inject: disabled
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: linkerd-controller
+  namespace: linkerd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: linkerd-controller
+  template:
+    metadata:
+      labels:
+        app: linkerd-controller
+    spec:
+      containers:
+      - name: controller
+        image: cr.l5d.io/linkerd/controller:stable-2.14.0
