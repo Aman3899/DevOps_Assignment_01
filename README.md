@@ -1,231 +1,230 @@
-# DevOps Assignment 1: Containerized Development & CI/CD Pipeline
+      
+# Assignment 2: Advanced Deployment Strategies with Kubernetes, Helm, Service Mesh, and GitOps
 
-## **Table of Contents**
-- [Project Overview](#project-overview)
-- [System Setup](#system-setup)
-- [Task 1: Linux System Administration](#task-1-linux-system-administration)
-- [Task 2: Bash Scripting](#task-2-bash-scripting)
-- [Task 3: Docker & Docker Compose](#task-3-docker--docker-compose)
-- [Task 4: Continuous Integration (CI)](#task-4-continuous-integration-ci)
-- [Submission Instructions](#submission-instructions)
+This repository contains the solution for Assignment 2, demonstrating advanced deployment strategies using a sample application deployed on Kubernetes. It utilizes Helm for packaging, Linkerd for service mesh capabilities (observability, traffic splitting), and Argo CD for implementing GitOps workflows.
 
----
+## Project Overview
 
-## **Project Overview**
-This project aims to set up a containerized web application development workflow using Docker and automate the CI/CD process with GitHub Actions.
+The goal is to deploy a simple application (consisting of a frontend and a backend service) onto a Kubernetes cluster and manage its lifecycle using modern DevOps tools and practices:
 
----
+1.  **Kubernetes Deployment:** Basic deployment using raw Kubernetes manifests.
+2.  **Helm Packaging:** Packaging the application into a Helm chart for templating and release management.
+3.  **Service Mesh (Linkerd):** Integrating Linkerd to gain observability, reliability, and enable advanced traffic management like Canary deployments.
+4.  **GitOps (Argo CD):** Using Argo CD to automate the deployment process based on the state of this Git repository.
 
-## **System Setup**
-### **Prerequisites**
-Ensure the following are installed:
-- Linux OS (Ubuntu 20.04+)
-- Docker & Docker Compose
-- Git
-- Node.js & npm (for backend/frontend)
-- Python (for scripting)
-- GitHub Actions (for CI/CD)
+## Folder Structure
+```
+ASSIGNMENT_01/
+├── .github/ # GitHub Actions workflows (e.g., CI for building images)
+├── argocd/ # Argo CD Application manifests (e.g., application.yaml)
+├── backend/ # Backend application source code (Requires Dockerfile)
+├── frontend/ # Frontend application source code (Requires Dockerfile)
+├── kubernetes/
+│ ├── helm/charts/ # Helm chart for the application
+│ │ ├── myapp/ # Helm chart directory (created via helm create)
+│ │ │ ├── templates/ # Kubernetes manifest templates
+│ │ │ ├── Chart.yaml # Chart metadata
+│ │ │ ├── values.yaml # Default configuration values
+│ │ │ ├── values-dev.yaml # Development environment values
+│ │ │ └── values-prod.yaml # Production environment values
+│ └── manifests/ # Raw Kubernetes manifests (for Task 1)
+│ ├── namespace.yaml
+│ ├── server-deployment.yaml
+│ ├── client-deployment.yaml
+│ └── ingress.yaml # (Example manifests)
+├── scripts/ # Utility scripts
+│ ├── generate-secrets.sh # (Optional: Script for secrets)
+│ └── linkerd-install.sh # Script to install Linkerd CLI and control plane
+├── service-mesh/
+│ └── linkerd/ # Linkerd specific configurations
+│ ├── service-profile/ # (Optional: Linkerd ServiceProfiles)
+│ └── traffic-split.yaml # (Example: For Canary Deployments)
+├── docker-compose.yml # Optional: For local development setup
+├── health_check.sh # Script to check application health
+└── README.md # This file
+```
+      
+## Prerequisites
 
----
+Ensure you have the following tools installed and configured:
 
-## **Task 1: Linux System Administration (Done by Ismail Daniyal)**
+*   `kubectl`: Kubernetes command-line tool.
+*   `helm`: Kubernetes package manager.
+*   `linkerd` CLI: Linkerd command-line tool.
+*   `docker`: Containerization tool (for building images).
+*   A running Kubernetes cluster (e.g., Minikube, Kind, k3d, GKE, EKS, AKS).
+*   `git`: Version control system.
+*   Argo CD: Installed in your cluster (see Task 4).
+*   (Optional) An Ingress controller installed in your cluster (like Nginx Ingress) if using Ingress resources.
 
-### **Step 1: Creating a systemd Service**
+## Setup
+
+1.  **Clone the Repository:**
+    ```bash
+    git clone <your-repo-url>
+    cd ASSIGNMENT_01
+    ```
+2.  **Start Kubernetes Cluster:** Ensure your chosen Kubernetes cluster is running.
+    *(Example for Minikube)*
+    ```bash
+    minikube start --cpus=4 --memory=4096 # Adjust resources as needed
+    # If using Ingress
+    minikube addons enable ingress
+    ```
+3.  **(Optional) Build & Push Docker Images:** Build your actual `frontend` and `backend` application images and push them to a container registry (like Docker Hub, GHCR, etc.). Update the image references in `kubernetes/helm/charts/myapp/values-*.yaml`. This step can be automated using GitHub Actions (see `.github/workflows/`).
+
+## Deployment and Usage
+
+Follow these tasks sequentially to deploy and manage the application.
+
+### Task 1: Basic Kubernetes Deployment (Raw Manifests)
+
+This step deploys the application using basic Kubernetes YAML files.
+
+1.  **Create Namespace:**
+    ```bash
+    kubectl apply -f kubernetes/manifests/namespace.yaml
+    ```
+2.  **Deploy Application Components:**
+    *(Ensure manifests in `kubernetes/manifests/` define your Deployments, Services, etc.)*
+    ```bash
+    kubectl apply -f kubernetes/manifests/ -n myapp
+    ```
+3.  **Verify:**
+    ```bash
+    kubectl get all -n myapp
+    # Check pods, services, ingress status
+    ```
+4.  **(Optional) Clean Up:**
+    ```bash
+    kubectl delete -f kubernetes/manifests/ -n myapp
+    ```
+
+### Task 2: Helm Packaging
+
+Package the application using Helm for better manageability and configuration.
+
+1.  **Navigate to Chart:** The Helm chart `myapp` should be located in `kubernetes/helm/charts/`.
+2.  **Deploy using Helm (Development):**
+    ```bash
+    helm install myapp-dev kubernetes/helm/charts/myapp \
+      -f kubernetes/helm/charts/myapp/values-dev.yaml \
+      -n myapp --create-namespace
+    ```
+3.  **Verify:**
+    ```bash
+    helm list -n myapp
+    kubectl get all -n myapp
+    ```
+4.  **Upgrade (Example):** If you make changes to the chart or values:
+    ```bash
+    helm upgrade myapp-dev kubernetes/helm/charts/myapp \
+      -f kubernetes/helm/charts/myapp/values-dev.yaml \
+      -n myapp
+    ```
+5.  **Uninstall:**
+    ```bash
+    helm uninstall myapp-dev -n myapp
+    ```
+
+### Task 3: Service Mesh Integration (Linkerd)
+
+Integrate Linkerd for observability, mTLS, and advanced traffic management.
+
+1.  **Install Linkerd:**
+    *   Install the Linkerd CLI (if not already done): `curl -sL https://run.linkerd.io/install | sh`
+    *   Install the Linkerd control plane:
+        ```bash
+        # Run the install script or commands manually
+        sh scripts/linkerd-install.sh
+        # Verify installation
+        linkerd check
+        ```
+2.  **Enable Linkerd Injection:** Ensure your Helm chart's Deployment templates (`templates/*-deployment.yaml`) include the `linkerd.io/inject: enabled` annotation in the pod template metadata:
+    ```yaml
+    # ... inside spec.template.metadata
+    annotations:
+      linkerd.io/inject: enabled
+    ```
+3.  **Deploy/Upgrade with Helm:** Deploy or upgrade your application using Helm (as in Task 2). The Linkerd proxy injector will automatically add the sidecar container.
+    ```bash
+    helm upgrade --install myapp-dev kubernetes/helm/charts/myapp \
+      -f kubernetes/helm/charts/myapp/values-dev.yaml \
+      -n myapp --create-namespace
+    ```
+4.  **Verify Linkerd Integration:**
+    ```bash
+    # Check if pods have 2/2 containers ready (app + linkerd-proxy)
+    kubectl get pods -n myapp
+    # Check Linkerd status for the namespace
+    linkerd check --proxy -n myapp
+    # Open the Linkerd dashboard
+    linkerd viz dashboard &
+    # View stats
+    linkerd viz stat deploy -n myapp
+    ```
+5.  **(Bonus) Canary Deployment:**
+    *   Deploy a new "canary" version of a service (e.g., `backend`) using Helm with a different image tag and potentially a different service name (e.g., `backend-service-canary`).
+    *   Apply a `TrafficSplit` resource (like `service-mesh/linkerd/traffic-split.yaml`) to route a percentage of traffic to the canary.
+    *   Monitor the canary using the Linkerd dashboard.
+
+### Task 4: GitOps with Argo CD
+
+Automate deployments based on Git repository state using Argo CD.
+
+1.  **Install Argo CD:**
+    ```bash
+    kubectl create namespace argocd
+    kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+    # Access Argo CD UI (Port-forward or Ingress)
+    kubectl port-forward svc/argocd-server -n argocd 8080:443 &
+    # Get initial admin password
+    argocd admin initial-password -n argocd
+    ```
+2.  **Define Argo CD Application:** Create an `Application` manifest (e.g., in `argocd/application.yaml`) pointing to your Git repository and the Helm chart path.
+    ```yaml
+    # Example: argocd/application.yaml
+    apiVersion: argoproj.io/v1alpha1
+    kind: Application
+    metadata:
+      name: myapp-dev
+      namespace: argocd
+    spec:
+      project: default
+      source:
+        repoURL: <your-git-repo-url> # e.g., https://github.com/yourusername/your-repo.git
+        path: kubernetes/helm/charts/myapp
+        targetRevision: main # Or specific branch/tag
+        helm:
+          valueFiles:
+          - values-dev.yaml # Specify which values file to use
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: myapp
+      syncPolicy:
+        automated: # Optional: Enable auto-sync
+          prune: true
+          selfHeal: true
+        syncOptions:
+        - CreateNamespace=true # Automatically create the namespace if it doesn't exist
+    ```
+3.  **Apply the Application Manifest:**
+    ```bash
+    kubectl apply -f argocd/application.yaml
+    ```
+4.  **Verify in Argo CD:** Access the Argo CD UI (or use `argocd` CLI) to check the application status. It should sync and deploy the Helm chart to the `myapp` namespace.
+5.  **GitOps Workflow:**
+    *   Make changes in your Git repository (e.g., update image tag in `values-dev.yaml`, modify Helm templates).
+    *   Commit and push the changes to the `targetRevision` branch (e.g., `main`).
+    *   Argo CD will automatically detect the changes (if auto-sync is enabled) or show 'OutOfSync'.
+    *   Argo CD applies the changes to the cluster, ensuring the cluster state matches the Git repository state.
+
+## Health Check
+
+Use the provided script to perform a basic health check of the deployed application (you might need to adapt it based on your application's endpoints and Ingress setup).
+
 ```bash
-sudo nano /etc/systemd/system/express.service
-```
-Add the following content:
-```ini
-[Unit]
-Description=Express.js Web Server
-After=network.target
+# Ensure Ingress is accessible (e.g., update /etc/hosts or use port-forward)
+sh scripts/health_check.sh
 
-[Service]
-ExecStart=/usr/bin/node /home/ismaildanial/Desktop/DevOps_Assignment_01/backend/app.js
-Restart=always
-User=ismaildanial
-Environment=NODE_ENV=production
-WorkingDirectory=/home/ismaildanial/Desktop/DevOps_Assignment_01/backend
-
-[Install]
-WantedBy=multi-user.target
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable express
-sudo systemctl start express
-```
-
-### **Step 2: Kernel Tuning**
-```bash
-echo 'net.core.somaxconn=1024' | sudo tee -a /etc/sysctl.conf
-sudo sysctl -p
-```
-
-### **Step 3: Firewall Setup**
-```bash
-sudo ufw allow 80/tcp
-sudo ufw allow 443/tcp
-sudo ufw enable
-```
-
----
-
-## **Task 2: Bash Scripting (Done by Sami)**
-
-### **Health Check Script**
-```bash
-#!/bin/bash
-SERVICE_NAME=webapp
-if ! systemctl is-active --quiet $SERVICE_NAME; then
-    echo "$(date) - $SERVICE_NAME is down. Restarting..." >> /var/log/webapp_monitor.log
-    systemctl restart $SERVICE_NAME
-fi
-```
-Save as `health_check.sh` and schedule with cron:
-```bash
-crontab -e
-*/5 * * * * /bin/bash /home/user/health_check.sh
-```
-
-### **Log Analysis Script**
-```bash
-#!/bin/bash
-awk '{print $1}' /var/log/nginx/access.log | sort | uniq -c | sort -nr | head -3
-```
-Run:
-```bash
-bash log_analysis.sh
-```
-
----
-
-## **Task 3: Docker & Docker Compose (Done by Ismail,AmanUllah, & Sami)**
-
-### **Step 1: Dockerfile for Backend (Express.js)**
-```dockerfile
-FROM node:18
-WORKDIR /app
-COPY package.json .
-RUN npm install
-COPY . .
-CMD ["node", "server.js"]
-EXPOSE 5000
-```
-
-### **Step 2: Docker Compose File**
-```yaml
-version: '3'
-services:
-  backend:
-    build: ./backend
-    ports:
-      - "5000:5000"
-    volumes:
-      - ./backend:/app
-  database:
-    image: mongo:latest
-    ports:
-      - "27017:27017"
-```
-Start the services:
-```bash
-docker-compose up -d
-```
-
----
-
-## **Task 4: Continuous Integration (CI) (Done by Amanullah)**
-
-### **GitHub Actions Workflow**
-Create `.github/workflows/ci.yml`:
-```yaml
-name: CI Pipeline
-
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
-
-jobs:
-  build-frontend:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
-
-      - name: Install Dependencies
-        run: |
-          cd frontend
-          npm install
-
-      - name: Run Linter
-        run: |
-          cd frontend
-          npm run lint
-
-      - name: Build Frontend
-        run: |
-          cd frontend
-          npm run build
-
-  build-backend:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
-
-      - name: Install Dependencies
-        run: |
-          cd backend
-          npm install
-
-      - name: Run Backend Tests
-        run: |
-          cd backend
-          npm test
-
-      - name: Lint Backend Code
-        run: |
-          cd backend
-          npm run lint
-
-  docker-build-push:
-    needs: [build-frontend, build-backend]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
-
-      - name: Login to DockerHub
-        run: echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-
-      - name: Build and Push Backend Image
-        run: |
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/backend:latest ./backend
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/backend:latest
-
-      - name: Build and Push Frontend Image
-        run: |
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/frontend:latest ./frontend
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/frontend:latest
-```
-
----
-
-## **Submission Instructions**
-- Push all code to the private GitHub repository.
-- Include scripts, Dockerfiles, and CI/CD workflow configurations.
-- Submit a link to the repository.
+    
