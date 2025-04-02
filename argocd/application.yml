@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/yourusername/your-repo.git # Replace with your Git repo
+    repoURL: https://github.com/Aman3899/DevOps_Assignment_01
     path: kubernetes/helm/charts/myapp
     targetRevision: main
     helm:
