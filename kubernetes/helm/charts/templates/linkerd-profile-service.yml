@@ -1,0 +1,22 @@
+{{- if .Values.linkerd.profile.enabled }}
+apiVersion: linkerd.io/v1alpha2
+kind: ServiceProfile
+metadata:
+  name: {{ .Values.linkerd.profile.serviceName | default (printf "%s-server" (include "my-blog-app.fullname" .)) }}.{{ .Release.Namespace }}.svc.cluster.local
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "my-blog-app.labels" . | nindent 4 }}
+spec:
+  {{- with .Values.linkerd.profile.routes }}
+  routes:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.linkerd.profile.retryBudget }}
+  retryBudget:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.linkerd.profile.dstOverrides }}
+  dstOverrides:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}

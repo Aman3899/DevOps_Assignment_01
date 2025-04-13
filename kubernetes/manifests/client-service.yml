@@ -1,14 +1,13 @@
-# client-service.yaml
 apiVersion: v1
 kind: Service
 metadata:
   name: client
-  namespace: blog-app
 spec:
+  type: ClusterIP
   selector:
     app: client
   ports:
-    - port: 8080
+    - name: http
+      protocol: TCP
+      port: 80
       targetPort: 8080
-      nodePort: 30080
-  type: LoadBalancer

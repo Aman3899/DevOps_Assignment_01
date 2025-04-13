@@ -1,10 +1,33 @@
 replicaCount: 1
-frontend:
-  image: nginx:latest
-  tag: latest
-backend:
-  image: node:18
-  tag: latest
-ingress:
-  enabled: true
-  host: myapp.local
+
+client:
+  replicaCount: 1 # Explicitly 1 for dev client
+  image:
+    tag: "develop" # Maybe use a specific dev tag or 'latest'
+  resources:
+    requests:
+      cpu: "50m" # Lower resources for dev
+      memory: "32Mi"
+    limits:
+      cpu: "200m"
+      memory: "128Mi"
+  ingress:
+    enabled: true # Or maybe false if dev doesn't need external access
+    hosts:
+      - host: dev.blog.example.com # Dev-specific hostname
+
+server:
+  replicaCount: 1
+  image:
+    tag: "develop"
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "64Mi"
+    limits:
+      cpu: "500m"
+      memory: "256Mi"
+
+mongodb:
+  persistence:
+    size: 2Gi # Smaller disk for dev

@@ -1,13 +1,13 @@
-# mongo-service.yaml
 apiVersion: v1
 kind: Service
 metadata:
-  name: mongo
-  namespace: blog-app
+  name: mongo-svc
 spec:
+  clusterIP: None
   selector:
     app: mongo
   ports:
-    - port: 27017
+    - name: mongodb
+      protocol: TCP
+      port: 27017
       targetPort: 27017
-  clusterIP: None # Headless service to enable direct communication

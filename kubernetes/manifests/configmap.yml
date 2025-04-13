@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  BASE_API_URL: "http://localhost:3001"
+  backendApiUrl: "http://localhost:3001/api"

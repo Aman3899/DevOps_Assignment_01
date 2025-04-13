@@ -1,27 +1,69 @@
-# mongo-deployment.yaml
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: mongo
-  namespace: blog-app
 spec:
   replicas: 1
   selector:
     matchLabels:
       app: mongo
+  serviceName: "mongo-svc"
   template:
     metadata:
       labels:
         app: mongo
     spec:
+      terminationGracePeriodSeconds: 10
       containers:
         - name: mongo
-          image: mongo:latest
+          image: mongo:5.0 
+          imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 27017
+            - name: mongodb
+              containerPort: 27017
+              protocol: TCP
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mongo-secret
+                  key: username
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mongo-secret
+                  key: password
+          livenessProbe:
+            exec:
+              command: ["mongosh", "--eval", "db.adminCommand('ping')"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+            successThreshold: 1
+          readinessProbe:
+            exec:
+              command: ["mongosh", "--eval", "db.adminCommand('ping')"]
+            initialDelaySeconds: 5 # Probe sooner for readiness
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+            successThreshold: 1
           volumeMounts:
-            - name: mongo-storage
+            - name: mongo-persistent-storage
               mountPath: /data/db
-      volumes:
-        - name: mongo-storage
-          emptyDir: {}
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+  volumeClaimTemplates:
+    - metadata:
+        name: mongo-persistent-storage
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 2Gi

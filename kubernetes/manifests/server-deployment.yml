@@ -15,21 +15,49 @@ spec:
       containers:
         - name: server
           image: aman3899/backend:latest
+          imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 3001
+            - name: http
+              containerPort: 3001
+              protocol: TCP
           env:
             - name: BASE_API_URL
               valueFrom:
                 configMapKeyRef:
-                  name: blog-app-config
+                  name: app-config
                   key: BASE_API_URL
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: blog-app-secrets
+                  name: app-secrets
                   key: JWT_SECRET
             - name: MONGO_URI
               valueFrom:
                 secretKeyRef:
-                  name: blog-app-secrets
+                  name: app-secrets
                   key: MONGO_URI
+          livenessProbe:
+            httpGet:
+              path: / 
+              port: http 
+            initialDelaySeconds: 20 # Wait 20s before first probe (allow backend startup time)
+            periodSeconds: 30     # Probe every 30s
+            timeoutSeconds: 5       # Wait max 5s for response
+            failureThreshold: 3     # Consider failed after 3 consecutive failures
+            successThreshold: 1     # Consider healthy after 1 success
+          readinessProbe:
+            httpGet:
+              path: / # Or e.g., /healthz - Should confirm app is ready for traffic (DB connected?)
+              port: http # Reference the container port name
+            initialDelaySeconds: 10 # Wait 10s before first probe
+            periodSeconds: 15     # Probe every 15s
+            timeoutSeconds: 3       # Wait max 3s for response
+            failureThreshold: 3     # Consider not ready after 3 consecutive failures
+            successThreshold: 1     # Consider ready after 1 success
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "128Mi"
+            limits:
+              cpu: "1000m"
+              memory: "512Mi"

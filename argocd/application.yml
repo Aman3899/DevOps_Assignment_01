@@ -1,21 +1,29 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: myapp-dev
+  name: blog-app-prod
   namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
 spec:
-  project: default
+  project: blog-project
   source:
-    repoURL: https://github.com/Aman3899/DevOps_Assignment_01
-    path: kubernetes/helm/charts/myapp
+    repoURL: https://github.com/Aman3899/DevOps_Assignment_01.git
     targetRevision: main
+    path: kubernetes/helm/my-app
     helm:
       valueFiles:
-      - values-dev.yaml
+        - values-prod.yaml
   destination:
     server: https://kubernetes.default.svc
-    namespace: myapp
+    namespace: prod
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - PruneLast=true
+      - ApplyOutOfSyncOnly=true
+  ignoreDifferences: []
+  revisionHistoryLimit: 10

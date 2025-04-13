@@ -1,20 +1,89 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Release.Name }}-backend
+  name: {{ include "my-blog-app.fullname" . }}-server
   namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "my-blog-app.labels" . | nindent 4 }}
+    app.kubernetes.io/component: server
 spec:
-  replicas: {{ .Values.replicaCount }}
+  replicas: {{ .Values.server.replicaCount | default .Values.replicaCount }}
   selector:
     matchLabels:
-      app: backend
+      {{- include "my-blog-app.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: server
   template:
     metadata:
+      {{- with .Values.server.podAnnotations }} 
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       labels:
-        app: backend
+        {{- include "my-blog-app.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: server
     spec:
+      {{- with .Values.imagePullSecrets }} 
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "my-blog-app.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
-      - name: backend
-        image: "{{ .Values.backend.image }}:{{ .Values.backend.tag }}"
-        ports:
-        - containerPort: 3000
+        - name: server
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.server.image.repository }}:{{ .Values.server.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.server.service.port }}
+              protocol: TCP
+          env:
+            - name: BASE_API_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "my-blog-app.fullname" . }}-config 
+                  key: BASE_API_URL 
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "my-blog-app.fullname" . }}-secrets
+                  key: JWT_SECRET
+            - name: MONGO_URI
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "my-blog-app.fullname" . }}-secrets
+                  key: MONGO_URI
+          livenessProbe:
+            httpGet:
+              path: / 
+              port: http 
+            initialDelaySeconds: 20
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+            successThreshold: 1
+          readinessProbe:
+            httpGet:
+              path: / 
+              port: http 
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 3
+            failureThreshold: 3
+            successThreshold: 1
+          resources:
+            {{- toYaml .Values.server.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

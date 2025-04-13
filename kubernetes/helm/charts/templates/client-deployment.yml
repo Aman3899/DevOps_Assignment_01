@@ -1,20 +1,53 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Release.Name }}-frontend
-  namespace: {{ .Release.Namespace }}
+  name: {{ include "my-blog-app.fullname" . }}-client # Use fullname helper
+  namespace: {{ .Release.Namespace }} # Use the release namespace
+  labels:
+    {{- include "my-blog-app.labels" . | nindent 4 }} # Use labels helper
+    app.kubernetes.io/component: client
 spec:
-  replicas: {{ .Values.replicaCount }}
+  # Use replicaCount from values.yaml or global default
+  replicas: {{ .Values.client.replicaCount | default .Values.replicaCount }}
   selector:
     matchLabels:
-      app: frontend
+      {{- include "my-blog-app.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: client
   template:
     metadata:
       labels:
-        app: frontend
+        {{- include "my-blog-app.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: client
+      # Add annotations for service mesh later (Task 3)
     spec:
       containers:
-      - name: frontend
-        image: "{{ .Values.frontend.image }}:{{ .Values.frontend.tag }}"
-        ports:
-        - containerPort: 80
+        - name: client
+          image: "{{ .Values.client.image.repository }}:{{ .Values.client.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.client.service.targetPort }} # Use targetPort from values
+              protocol: TCP
+          env:
+            - name: API_BASE_URL # Example: Use value from appConfigData
+              valueFrom:
+                configMapKeyRef:
+                  # Reference the ConfigMap created by configmap.yaml template
+                  name: {{ include "my-blog-app.fullname" . }}-config
+                  key: backendApiUrl
+          livenessProbe:
+             # Keep probes or parameterize them too if needed
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          # Use resources defined in values.yaml
+          resources:
+            {{- toYaml .Values.client.resources | nindent 12 }}

@@ -15,11 +15,39 @@ spec:
       containers:
         - name: client
           image: aman3899/frontend:latest
+          imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 8080
+            - name: http
+              containerPort: 8080
+              protocol: TCP
           env:
-            - name: CLIENT_URL
+            - name: API_BASE_URL
               valueFrom:
                 configMapKeyRef:
-                  name: blog-app-config
-                  key: CLIENT_URL
+                  name: app-config
+                  key: backendApiUrl 
+          livenessProbe:
+            httpGet:
+              path: / # Assuming the root path returns 2xx/3xx if healthy
+              port: http # Reference the container port name
+            initialDelaySeconds: 15 # Wait 15s before first probe
+            periodSeconds: 20     # Probe every 20s
+            timeoutSeconds: 5       # Wait max 5s for response
+            failureThreshold: 3     # Consider failed after 3 consecutive failures
+            successThreshold: 1     # Consider healthy after 1 success
+          readinessProbe:
+            httpGet:
+              path: / # Assuming the root path returns 2xx/3xx when ready for traffic
+              port: http # Reference the container port name
+            initialDelaySeconds: 5  # Wait 5s before first probe (can be quicker than liveness)
+            periodSeconds: 10     # Probe every 10s
+            timeoutSeconds: 3       # Wait max 3s for response
+            failureThreshold: 3     # Consider not ready after 3 consecutive failures
+            successThreshold: 1     # Consider ready after 1 success
+          resources:
+            requests:
+              cpu: "100m"    # 0.1 vCPU
+              memory: "64Mi" # 64 Mebibytes
+            limits:
+              cpu: "500m"    # 0.5 vCPU
+              memory: "256Mi" # 256 Mebibytes

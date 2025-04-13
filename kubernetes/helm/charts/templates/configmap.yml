@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "my-blog-app.fullname" . }}-config # Use fullname helper
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "my-blog-app.labels" . | nindent 4 }}
+data:
+  # Loop through the appConfigData dictionary from values.yaml
+  {{- range $key, $value := .Values.appConfigData }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}

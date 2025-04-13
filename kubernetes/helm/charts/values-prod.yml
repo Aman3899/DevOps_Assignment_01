@@ -1,10 +1,33 @@
-replicaCount: 3
-frontend:
-  image: nginx:latest
-  tag: latest
-backend:
-  image: node:18
-  tag: latest
-ingress:
-  enabled: true
-  host: myapp.prod.com
+replicaCount: 2
+
+client:
+  replicaCount: 2
+  image:
+    tag: "1.0.0"
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "64Mi"
+    limits:
+      cpu: "500m"
+      memory: "256Mi"
+  ingress:
+    enabled: true
+    hosts:
+      - host: blog.example.com
+
+server:
+  replicaCount: 2
+  image:
+    tag: "1.0.0"
+  resources:
+    requests:
+      cpu: "200m"
+      memory: "128Mi"
+    limits:
+      cpu: "1000m"
+      memory: "512Mi"
+
+mongodb:
+  persistence:
+    size: 5Gi
