@@ -1,15 +1,15 @@
-{{- if .Values.client.ingress.enabled -}} # Only create if ingress is enabled
+{{- if .Values.client.ingress.enabled }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ include "my-blog-app.fullname" . }}-client
+  name: {{ .Release.Name }}-client
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "my-blog-app.labels" . | nindent 4 }}
+    {{- include "blog-app.labels" . | nindent 4 }}
     app.kubernetes.io/component: client
   {{- with .Values.client.ingress.annotations }}
   annotations:
-    {{- toYaml . | nindent 4 }} # Render annotations from values
+    {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
   {{- if .Values.client.ingress.className }}
@@ -17,29 +17,21 @@ spec:
   {{- end }}
   {{- if .Values.client.ingress.tls }}
   tls:
-    {{- range .Values.client.ingress.tls }}
-    - hosts:
-        {{- range .hosts }}
-        - {{ . | quote }}
-        {{- end }}
-      secretName: {{ .secretName }}
-    {{- end }}
+    {{- toYaml .Values.client.ingress.tls | nindent 4 }}
   {{- end }}
   rules:
-    {{- range .Values.client.ingress.hosts }} # Loop through hosts
+    {{- range .Values.client.ingress.hosts }}
     - host: {{ .host | quote }}
       http:
         paths:
-          {{- range .paths }} # Loop through paths for the host
-          - path: {{ .path }}
-            pathType: {{ .pathType }}
+          {{- range .paths }}
+          - path: {{ .path | default "/" }}
+            pathType: {{ .pathType | default "Prefix" }}
             backend:
               service:
-                # Point to the client service created by the chart
-                name: {{ include "my-blog-app.fullname" . }}-client
+                name: {{ $.Release.Name }}-client
                 port:
-                  # Use the client service port from values
-                  number: {{ $.Values.client.service.port }}
+                  number: {{ $.Values.client.service.port | default 80 }}
           {{- end }}
     {{- end }}
 {{- end }}

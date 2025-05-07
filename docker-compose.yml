@@ -10,6 +10,7 @@ services:
       context: ./backend
     ports:
       - "3000:3000"
+      - "9464:9464"
     volumes:
       - ./backend:/app
       - /app/node_modules

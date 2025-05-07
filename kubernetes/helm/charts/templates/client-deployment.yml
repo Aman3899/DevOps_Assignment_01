@@ -1,53 +1,49 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "my-blog-app.fullname" . }}-client # Use fullname helper
-  namespace: {{ .Release.Namespace }} # Use the release namespace
+  name: {{ .Release.Name }}-client
+  namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "my-blog-app.labels" . | nindent 4 }} # Use labels helper
+    {{- include "blog-app.labels" . | nindent 4 }}
     app.kubernetes.io/component: client
 spec:
-  # Use replicaCount from values.yaml or global default
-  replicas: {{ .Values.client.replicaCount | default .Values.replicaCount }}
+  replicas: {{ .Values.client.replicaCount | default .Values.replicaCount | default 1 }}
   selector:
     matchLabels:
-      {{- include "my-blog-app.selectorLabels" . | nindent 6 }}
+      {{- include "blog-app.selectorLabels" . | nindent 6 }}
       app.kubernetes.io/component: client
   template:
     metadata:
       labels:
-        {{- include "my-blog-app.selectorLabels" . | nindent 8 }}
+        {{- include "blog-app.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: client
-      # Add annotations for service mesh later (Task 3)
+      {{- if .Values.client.podAnnotations }}
+      annotations:
+        {{- toYaml .Values.client.podAnnotations | nindent 8 }}
+      {{- end }}
     spec:
       containers:
         - name: client
           image: "{{ .Values.client.image.repository }}:{{ .Values.client.image.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          imagePullPolicy: {{ .Values.client.imagePullPolicy | default "IfNotPresent" }}
           ports:
             - name: http
-              containerPort: {{ .Values.client.service.targetPort }} # Use targetPort from values
+              containerPort: {{ .Values.client.service.targetPort | default 80 }}
               protocol: TCP
           env:
-            - name: API_BASE_URL # Example: Use value from appConfigData
+            {{- if .Values.client.env }}
+            {{- toYaml .Values.client.env | nindent 12 }}
+            {{- end }}
+            - name: API_BASE_URL
               valueFrom:
                 configMapKeyRef:
-                  # Reference the ConfigMap created by configmap.yaml template
-                  name: {{ include "my-blog-app.fullname" . }}-config
+                  name: {{ .Release.Name }}-config
                   key: backendApiUrl
-          livenessProbe:
-             # Keep probes or parameterize them too if needed
-            httpGet:
-              path: /
-              port: http
-            initialDelaySeconds: 15
-            periodSeconds: 20
-          readinessProbe:
-            httpGet:
-              path: /
-              port: http
-            initialDelaySeconds: 5
-            periodSeconds: 10
-          # Use resources defined in values.yaml
-          resources:
-            {{- toYaml .Values.client.resources | nindent 12 }}
+                  optional: true
+          {{- include "blog-app.livenessProbe" . | nindent 10 }}
+          {{- include "blog-app.readinessProbe" . | nindent 10 }}
+          {{- if .Values.client.resources }}
+          {{- toYaml .Values.client.resources | nindent 10 }}
+          {{- else }}
+          {{- include "blog-app.resources" . | nindent 10 }}
+          {{- end }}
