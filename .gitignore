@@ -1,0 +1,2 @@
+# Ignore Terraform state and provider directories
+terraform/.terraform/
