@@ -35,7 +35,7 @@ echo "AWS Account ID: $AWS_ACCOUNT_ID"
 echo "Initializing Terraform..."
 terraform init
 
-# Apply Terraform configuration
+# Apply Terraform configuration with auto-approve and using tfvars file
 echo "Applying Terraform configuration..."
 terraform apply -auto-approve
 
@@ -75,6 +75,12 @@ cd terraform
 # Create Kubernetes secrets
 echo "Creating Kubernetes secrets..."
 kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
+
+# Create Kubernetes secrets for MongoDB and JWT
+kubectl create secret generic blog-app-secrets \
+  --from-literal=mongo-uri="mongodb://admin:password@mongodb-service:27017/blog-app?authSource=admin" \
+  --from-literal=jwt-secret="your-jwt-secret-key" \
+  --dry-run=client -o yaml | kubectl apply -f -
 
 # Replace placeholders in deployment file
 echo "Preparing deployment file..."

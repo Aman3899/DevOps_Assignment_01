@@ -1,0 +1,12 @@
+aws_region = "eu-north-1"
+project_name = "blog-app"
+environment = "dev"
+vpc_cidr = "10.0.0.0/16"
+availability_zones = ["us-east-1a", "us-east-1b", "us-east-1c"]
+private_subnet_cidrs = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
+public_subnet_cidrs = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
+cluster_name = "blog-app-cluster"
+kubernetes_version = "1.27"
+min_node_count = 2
+max_node_count = 5
+desired_node_count = 2
