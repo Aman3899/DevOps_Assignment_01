@@ -1,225 +1,262 @@
-## Observability Setup
+# Observability Setup for MERN Blog App
 
-### Steps to Add Observability
+This document outlines the observability setup for our MERN stack blog application, including OpenTelemetry for tracing, Prometheus for metrics collection, and Grafana for visualization.
 
-- [ ] **1. Install OpenTelemetry in Backend**
+## Tools Used
 
-  Install dependencies:
+1. **OpenTelemetry**: For distributed tracing and instrumentation
+2. **Prometheus**: For metrics collection and storage
+3. **Grafana**: For metrics visualization and dashboards
+4. **Jaeger**: For distributed tracing visualization
 
-  ```bash
-  npm install @opentelemetry/api @opentelemetry/sdk-node @opentelemetry/exporter-prometheus
-  ```
+## Metrics Collected
 
-  Add the following code to your backend (e.g., `app.js`):
+- **HTTP Request Rate**: Number of requests per second
+- **Error Rate**: Number of 4xx/5xx errors per second
+- **Latency**: Response time percentiles (p95, p99)
+- **Custom App-Level Metrics**: MongoDB operations, authentication events
 
-  ```javascript
+## Setup Instructions
 
-    require("./tracing");
-    const promClient = require('prom-client');
-    var createError = require('http-errors');
-    var express = require('express');
-    var path = require('path');
-    var cookieParser = require('cookie-parser');
-    var logger = require('morgan');
-    var cors = require("cors");
-    var indexRouter = require('./routes/index');
-    var usersRouter = require('./routes/users');
+### 1. Prerequisites
 
-    // Create a Registry and metrics collectors for Prometheus
-    const register = new promClient.Registry();
-    promClient.collectDefaultMetrics({ register });
+- Docker and Docker Compose installed
+- Node.js and npm installed (for local development)
 
-    // Create custom metrics
-    const httpRequestDurationMicroseconds = new promClient.Histogram({
-    name: 'http_request_duration_seconds',
-    help: 'Duration of HTTP requests in seconds',
-    labelNames: ['method', 'route', 'status_code'],
-    buckets: [0.01, 0.05, 0.1, 0.5, 1, 2, 5, 10]
-    });
+### 2. Configuration Files
 
-    const httpRequestCounter = new promClient.Counter({
-    name: 'http_requests_total',
-    help: 'Total number of HTTP requests',
-    labelNames: ['method', 'route', 'status_code']
-    });
+The following configuration files are included in the project:
 
-    const errorCounter = new promClient.Counter({
-    name: 'http_errors_total',
-    help: 'Total number of HTTP errors',
-    labelNames: ['method', 'route', 'status_code']
-    });
+- `backend/prometheus.yml`: Prometheus configuration
+- `backend/tracing.js`: OpenTelemetry configuration
+- `grafana/provisioning/datasources/datasource.yml`: Grafana datasource configuration
+- `grafana/dashboards/blog-app-dashboard.json`: Pre-configured Grafana dashboard
+- `docker-compose-observability.yml`: Docker Compose file with all observability services
 
-    // Register custom metrics
-    register.registerMetric(httpRequestDurationMicroseconds);
-    register.registerMetric(httpRequestCounter);
-    register.registerMetric(errorCounter);
+### 3. Running the Observability Stack
 
-    var app = express();
+\`\`\`bash
+# Start the entire stack with observability tools
+docker-compose -f docker-compose-observability.yml up -d
 
-    app.set('views', path.join(\_\_dirname, 'views'));
-    app.set('view engine', 'ejs');
+# Check if all services are running
+docker-compose -f docker-compose-observability.yml ps
+\`\`\`
 
-    app.use((req, res, next) => {
-    const end = httpRequestDurationMicroseconds.startTimer();
+### 4. Accessing the Dashboards
 
-    res.on('finish', () => {
-    const route = req.route ? req.route.path : req.path;
-    const labels = {
-    method: req.method,
-    route: route,
-    status_code: res.statusCode
-    };
+- **Grafana**: http://localhost:3001 (login with admin and password is my Laptop's password)
+- **Prometheus**: http://localhost:9090
+- **Jaeger UI**: http://localhost:16686
 
-        httpRequestCounter.inc(labels);
-        end(labels);
-        if (res.statusCode >= 400) {
-          errorCounter.inc(labels);
-        }
+### 5. Metrics Endpoints
 
-    });
+- Backend metrics: http://localhost:3000/metrics
 
-    next();
-    });
+## Dashboard Screenshots
 
-    // Expose metrics endpoint for Prometheus to scrape
-    app.get('/metrics', async (req, res) => {
-    res.set('Content-Type', register.contentType);
-    res.end(await register.metrics());
-    });
+![HTTP Request Rate Dashboard](./screenshots/request-rate.png)
+![Error Rate Dashboard](./screenshots/error-rate.png)
+![Latency Dashboard](./screenshots/latency.png)
 
-    // Add a simple health check endpoint
-    app.get('/health', (req, res) => {
-    res.status(200).json({ status: 'ok' });
-    });
+## Troubleshooting
 
-    app.use(logger('dev'));
-    app.use(express.json());
-    app.use(express.urlencoded({ extended: false }));
-    app.use(cookieParser());
-    app.use(express.static(path.join(**dirname, 'public')));
-    app.use("/uploads", express.static(path.join(**dirname, 'uploads')));
-    app.use(cors());
-  
-    app.use('/', indexRouter);
-    app.use('/users', usersRouter);
+### Common Issues
 
-    // catch 404 and forward to error handler
-    app.use(function(req, res, next) {
-    next(createError(404));
-    });
+1. **Prometheus can't scrape metrics**:
+   - Check if the backend service is exposing metrics on the `/metrics` endpoint
+   - Verify the Prometheus configuration in `prometheus.yml`
+   - Ensure network connectivity between Prometheus and the backend service
 
-    // error handler
-    app.use(function(err, req, res, next) {
-    res.locals.message = err.message;
-    res.locals.error = req.app.get('env') === 'development' ? err : {};
+2. **Traces not appearing in Jaeger**:
+   - Verify that the `OTEL_EXPORTER_OTLP_ENDPOINT` environment variable is correctly set
+   - Check if Jaeger is running and accessible
+   - Look for any errors in the backend service logs related to OpenTelemetry
 
-    res.status(err.status || 500);
-    res.render('error');
-    });
+3. **Grafana dashboards not showing data**:
+   - Verify that the Prometheus datasource is correctly configured in Grafana
+   - Check if Prometheus is collecting metrics from the backend
+   - Ensure the dashboard queries match the metric names exposed by the application
 
-    module.exports = app;
-    ```
-    With tracing.js file:
-    ```javascript
-    const { NodeSDK } = require('@opentelemetry/sdk-node');
-    const { ConsoleSpanExporter } = require('@opentelemetry/sdk-trace-base');
-    const { getNodeAutoInstrumentations } = require('@opentelemetry/auto-instrumentations-node');
-    const { OTLPTraceExporter } = require('@opentelemetry/exporter-trace-otlp-http');
+## Adding Custom Metrics
 
-    const sdk = new NodeSDK({
-        serviceName: process.env.OTEL_SERVICE_NAME || 'backend-service',
-        traceExporter: process.env.NODE_ENV === 'production'
-            ? new OTLPTraceExporter({
-                url: process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://jaeger:4318/v1/traces',
-            })
-            : new ConsoleSpanExporter(),
-        instrumentations: [
-            getNodeAutoInstrumentations({
-                '@opentelemetry/instrumentation-express': { enabled: true },
-                '@opentelemetry/instrumentation-http': { enabled: true },
-                '@opentelemetry/instrumentation-mongodb': { enabled: true },
-                '@opentelemetry/instrumentation-dns': { enabled: false },
-            })
-        ]
-    });
+To add custom metrics to the application:
 
-    try {
-        const result = sdk.start();
-        if (result && typeof result.then === 'function') {
-            result.then(() => console.log('OpenTelemetry initialized successfully'))
-                .catch((error) => console.error('Error initializing OpenTelemetry', error));
-        } else {
-            console.log('OpenTelemetry initialized successfully');
-        }
-    } catch (error) {
-        console.error('Error initializing OpenTelemetry', error);
-    }
+1. Import the Prometheus client in your code:
+   \`\`\`javascript
+   const promClient = require('prom-client');
+   \`\`\`
 
-    process.on('SIGTERM', () => {
-        try {
-            const result = sdk.shutdown();
-            if (result && typeof result.then === 'function') {
-                result.then(() => {
-                    console.log('OpenTelemetry SDK shut down');
-                    process.exit(0);
-                }).catch((error) => {
-                    console.log('Error shutting down OpenTelemetry SDK', error);
-                    process.exit(1);
-                });
-            } else {
-                console.log('OpenTelemetry SDK shut down');
-                process.exit(0);
-            }
-        } catch (error) {
-            console.log('Error shutting down OpenTelemetry SDK', error);
-            process.exit(1);
+2. Create a new metric:
+   \`\`\`javascript
+   const myCustomMetric = new promClient.Counter({
+     name: 'my_custom_metric',
+     help: 'Description of my custom metric',
+     labelNames: ['label1', 'label2']
+   });
+   
+   // Register the metric
+   register.registerMetric(myCustomMetric);
+   \`\`\`
+
+3. Increment the metric in your code:
+   \`\`\`javascript
+   myCustomMetric.inc({ label1: 'value1', label2: 'value2' });
+   \`\`\`
+
+4. Add the metric to your Grafana dashboard by creating a new panel with the appropriate query.
+\`\`\`
+
+```terraform file="terraform/main.tf"
+provider "aws" {
+  region = var.aws_region
+}
+
+# VPC
+module "vpc" {
+  source = "terraform-aws-modules/vpc/aws"
+  version = "5.0.0"
+
+  name = "${var.project_name}-vpc"
+  cidr = var.vpc_cidr
+
+  azs             = var.availability_zones
+  private_subnets = var.private_subnet_cidrs
+  public_subnets  = var.public_subnet_cidrs
+
+  enable_nat_gateway = true
+  single_nat_gateway = true
+  enable_vpn_gateway = false
+
+  # Required for EKS
+  enable_dns_hostnames = true
+  enable_dns_support   = true
+
+  public_subnet_tags = {
+    "kubernetes.io/cluster/${var.cluster_name}" = "shared"
+    "kubernetes.io/role/elb"                    = "1"
+  }
+
+  private_subnet_tags = {
+    "kubernetes.io/cluster/${var.cluster_name}" = "shared"
+    "kubernetes.io/role/internal-elb"           = "1"
+  }
+
+  tags = var.tags
+}
+
+# EKS Cluster
+module "eks" {
+  source = "terraform-aws-modules/eks/aws"
+  version = "19.15.3"
+
+  cluster_name    = var.cluster_name
+  cluster_version = var.kubernetes_version
+
+  vpc_id     = module.vpc.vpc_id
+  subnet_ids = module.vpc.private_subnets
+
+  cluster_endpoint_public_access = true
+
+  eks_managed_node_group_defaults = {
+    ami_type       = "AL2_x86_64"
+    instance_types = ["t3.medium"]
+    
+    attach_cluster_primary_security_group = true
+  }
+
+  eks_managed_node_groups = {
+    app_nodes = {
+      min_size     = var.min_node_count
+      max_size     = var.max_node_count
+      desired_size = var.desired_node_count
+
+      instance_types = ["t3.medium"]
+      capacity_type  = "ON_DEMAND"
+
+      labels = {
+        Environment = var.environment
       }
-    });
-    ```
 
+      tags = var.tags
+    }
+  }
 
-    Instrument your app to collect HTTP metrics (e.g., using middleware).
+  tags = var.tags
+}
 
-- [ ] **2. Set Up Prometheus**
+# IAM role for the Kubernetes service account
+module "load_balancer_controller_irsa_role" {
+  source = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
+  version = "5.30.0"
 
-  Create a `prometheus.yml` file in your project root:
+  role_name = "aws-load-balancer-controller"
+  
+  attach_load_balancer_controller_policy = true
 
-  ```yaml
-  global:
-    scrape_interval: 15s
-  scrape_configs:
-    - job_name: "mern-app"
-      static_configs:
-        - targets: ["localhost:9464"]
-  ```
+  oidc_providers = {
+    ex = {
+      provider_arn               = module.eks.oidc_provider_arn
+      namespace_service_accounts = ["kube-system:aws-load-balancer-controller"]
+    }
+  }
 
-  Run Prometheus using Docker:
+  tags = var.tags
+}
 
-  ```bash
-  docker run -d -p 9090:9090 -v $(pwd)/prometheus.yml:/etc/prometheus/prometheus.yml prom/prometheus
-  ```
+# AWS Load Balancer Controller Helm Release
+resource "helm_release" "aws_load_balancer_controller" {
+  depends_on = [module.eks]
+  
+  name       = "aws-load-balancer-controller"
+  repository = "https://aws.github.io/eks-charts"
+  chart      = "aws-load-balancer-controller"
+  namespace  = "kube-system"
+  version    = "1.5.3"
 
-- [ ] **3. Set Up Grafana**
+  set {
+    name  = "clusterName"
+    value = var.cluster_name
+  }
 
-  Run Grafana using Docker:
+  set {
+    name  = "serviceAccount.create"
+    value = "true"
+  }
 
-  ```bash
-  docker run -d -p 3000:3000 grafana/grafana
-  ```
+  set {
+    name  = "serviceAccount.name"
+    value = "aws-load-balancer-controller"
+  }
 
-  Access Grafana at `http://localhost:3000`, log in with `admin/admin`, and add Prometheus as a data source pointing to `http://localhost:9090`.
-  Create dashboards for:
+  set {
+    name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
+    value = module.load_balancer_controller_irsa_role.iam_role_arn
+  }
+}
 
-  - HTTP request rate
-  - Error rate (4xx/5xx)
-  - Latency (p95, p99)
-  - Custom app-level metrics (e.g., user sign-ups)
+# Kubernetes provider configuration
+provider "kubernetes" {
+  host                   = module.eks.cluster_endpoint
+  cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+  
+  exec {
+    api_version = "client.authentication.k8s.io/v1beta1"
+    command     = "aws"
+    args        = ["eks", "get-token", "--cluster-name", var.cluster_name]
+  }
+}
 
-- [ ] **4. Screenshots**
-
-  Take screenshots of your Grafana dashboards showing the above metrics.
-
-### Config Files
-
-- `backend/index.js`: Updated with OpenTelemetry instrumentation.
-- `prometheus.yml`: Prometheus configuration file.
+# Helm provider configuration
+provider "helm" {
+  kubernetes {
+    host                   = module.eks.cluster_endpoint
+    cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+    
+    exec {
+      api_version = "client.authentication.k8s.io/v1beta1"
+      command     = "aws"
+      args        = ["eks", "get-token", "--cluster-name", var.cluster_name]
+    }
+  }
+}

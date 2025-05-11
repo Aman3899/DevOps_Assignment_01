@@ -1,0 +1,144 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blog-app-backend
+  namespace: default
+  labels:
+    app: blog-app-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: blog-app-backend
+  template:
+    metadata:
+      labels:
+        app: blog-app-backend
+    spec:
+      containers:
+      - name: backend
+        image: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/blog-app-backend:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: MONGO_URI
+          valueFrom:
+            secretKeyRef:
+              name: blog-app-secrets
+              key: mongo-uri
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: blog-app-secrets
+              key: jwt-secret
+        - name: OTEL_SERVICE_NAME
+          value: "blog-backend"
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: "http://jaeger.monitoring:4318/v1/traces"
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blog-app-frontend
+  namespace: default
+  labels:
+    app: blog-app-frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: blog-app-frontend
+  template:
+    metadata:
+      labels:
+        app: blog-app-frontend
+    spec:
+      containers:
+      - name: frontend
+        image: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/blog-app-frontend:latest
+        ports:
+        - containerPort: 80
+        env:
+        - name: API_BASE_URL
+          value: "http://blog-app-backend-service:3000"
+        resources:
+          requests:
+            cpu: "50m"
+            memory: "64Mi"
+          limits:
+            cpu: "200m"
+            memory: "256Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blog-app-backend-service
+  namespace: default
+spec:
+  selector:
+    app: blog-app-backend
+  ports:
+  - port: 3000
+    targetPort: 3000
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blog-app-frontend-service
+  namespace: default
+spec:
+  selector:
+    app: blog-app-frontend
+  ports:
+  - port: 80
+    targetPort: 80
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: blog-app-ingress
+  namespace: default
+  annotations:
+    kubernetes.io/ingress.class: "alb"
+    alb.ingress.kubernetes.io/scheme: "internet-facing"
+    alb.ingress.kubernetes.io/target-type: "ip"
+    alb.ingress.kubernetes.io/healthcheck-path: "/"
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: blog-app-backend-service
+            port:
+              number: 3000
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: blog-app-frontend-service
+            port:
+              number: 80
